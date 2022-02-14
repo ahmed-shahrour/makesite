@@ -6,6 +6,8 @@ import (
 	"html/template"
 	"io/ioutil"
 	"os"
+
+	md "github.com/gomarkdown/markdown"
 )
 
 type Page struct {
@@ -13,6 +15,13 @@ type Page struct {
 	TextFileName string
 	HTMLPagePath string
 	Content      string
+}
+
+type MdPage struct {
+	TextFilePath string
+	TextFileName string
+	HTMLPagePath string
+	Content      template.HTML
 }
 
 func isFlagPassed(name string) bool {
@@ -28,6 +37,7 @@ func isFlagPassed(name string) bool {
 func main() {
 	fileFlag := flag.String("file", "first-post.txt", "Enter the name of the file to be converted")
 	dirFlag := flag.String("dir", ".", "Enter the directory to find .txt files")
+	mdFlag := flag.String("md", "test-1.md", "Enter the name of the .md file to be converted")
 	flag.Parse()
 
 	if isFlagPassed("file") {
@@ -64,6 +74,23 @@ func main() {
 				t.Execute(newFile, page)
 			}
 		}
+	}
+
+	if isFlagPassed("md") {
+		fileContents, _ := ioutil.ReadFile(*mdFlag)
+		fileName := (*mdFlag)[:len(*mdFlag)-3]
+		output := md.ToHTML(fileContents, nil, nil)
+
+		page := MdPage{
+			TextFilePath: "./",
+			TextFileName: fileName,
+			HTMLPagePath: fileName + ".html",
+			Content:      template.HTML(output),
+		}
+
+		t := template.Must(template.New("template.tmpl").ParseFiles("template.tmpl"))
+		newFile, _ := os.Create(page.HTMLPagePath)
+		t.Execute(newFile, page)
 	}
 
 }
